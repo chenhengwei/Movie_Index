@@ -1,0 +1,188 @@
+.Footer {
+	display: block;
+	width: 100%;
+	background-color: #EEEEEE;
+	overflow-y: auto;
+}
+.Footer .Footer-sitemap {
+	width: 960px;
+	margin-left: auto;
+	margin-right: auto;
+	display: block;
+	height: 210px;
+	padding-top: 45px;
+	border-top: 1px solid #CCCCCC;
+}
+.Footer .Footer-sitemap .Unit01{
+	display: block;
+	width: 180px;
+	float: left;
+}
+.Footer .Footer-sitemap .Unit-padd{
+	padding-right: 80px;
+}
+.Footer .Footer-sitemap .Unit01 .Unit-title {
+	display: block;
+	width: 180px;
+	font-size: 20px;
+	line-height: 20px;
+	padding-bottom: 10px;
+	color: #000000;
+}
+.Footer .Footer-sitemap .Unit01 .row-title {
+	display: block;
+	clear: both;
+	width: 180px;
+	color: #000000;
+	font-size: 12px;
+	line-height: 12px;
+	padding-bottom: 5px;
+}
+.Footer .Footer-sitemap .Unit01 .padd-top {
+	padding-top: 15px;
+
+}
+.Footer .Footer-sitemap .Unit01 .row1 li {
+	width: 180px;
+}
+.Footer .Footer-sitemap .Unit01 .row2 li {
+	width: 90px;
+}
+.Footer .Footer-sitemap .Unit01 .row4 li {
+	width: 45px;
+}
+.Footer .Footer-sitemap .Unit01 .row-txt li {
+	display: block;
+	float: left;
+	padding-top: 3px;
+	padding-bottom: 3px;
+}
+.Footer .Footer-sitemap .Unit01 .row-txt li a {
+	text-decoration: none;
+	font-size: 12px;
+	line-height: 12px;
+	color: #777777;
+}
+.Footer .Footer-sitemap .Unit01 .row-txt li a:hover {
+	color: #4FB1CE;
+}
+.Footer .foot-logo {
+	width: 960px;
+	display: block;
+	height: 120px;
+	margin-left: auto;
+	margin-right: auto;
+}
+.Footer .foot-menu {
+	width: 690px;
+	margin-left: auto;
+	margin-right: auto;
+	display: block;
+	height: 25px;
+
+}
+.Footer .foot-copyright {
+	text-align: center;
+	font-size: 11px;
+	line-height: 16px;
+	color: #BBBBBB;
+	padding-bottom: 50px;
+	clear: both;
+}
+.Footer .foot-menu ul li {
+	display: block;
+	float: left;
+
+}
+.Footer .foot-menu ul li a {
+	color: #333333;
+	font-size: 14px;
+	line-height: 14px;
+	text-decoration: none;
+	padding-right: 12px;
+	padding-left: 12px;
+	display: block;
+}
+.Footer .foot-menu ul li a:hover {
+	color: #7DC6DB;
+}
+.Footer .foot-logo .logo-line {
+	border-top: 1px solid #CCCCCC;
+	position: absolute;
+	height: 1px;
+	width: 960px;
+	display: block;
+	margin-top: 40px;
+}
+.Footer .foot-logo .logo-txt {
+	position: absolute;
+	background-color: #EEEEEE;
+	display: block;
+	width: 260px;
+	height: 80px;
+	text-align: center;
+	margin-left: 350px;
+}
+.Footer .foot-logo .logo-txt .logo-pic {
+	background-image: url(../images/footer_logo_new.png);
+	background-repeat: no-repeat;
+	background-position: 50% 50%;
+	display: block;
+	width: 94px;
+	height: 45px;
+	margin-left: 86px;
+	margin-bottom: 10px;
+}
+.Footer .foot-logo .logo-txt .logo-slogan {
+	color: #333333;
+	font-size: 16px;
+	line-height: 16px;
+	letter-spacing: 8px;
+}
+
+
+
+.lightbox:target  {
+	display: block;
+	}
+.lightbox {
+	display: none;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100% ; 
+    height: 100%  ;
+    z-index: 20 ; 
+    background: rgba(00,00,00,0.8);  
+	}
+.lightbox .figure {
+	display: block;
+	left: 50%;
+	top: 50%;
+	position: absolute;
+}
+.lightbox .figure-w {
+	width: 800px;
+	height: 485px;
+	margin-top: -260px;
+	margin-left: -400px;
+}
+.lightbox .figure .close-lightbox {
+	display: block;
+	width: 30px;
+	text-decoration: none;
+	color: #000000;
+	background-color: #999999;
+	border-radius: 15px;
+	font-size: 16px;
+	line-height: 16px;
+	text-align: center;
+	padding-top: 7px;
+	padding-bottom: 7px;
+	margin-left: 770px;
+	margin-bottom: 5px;
+}
+.lightbox .figure .close-lightbox:hover {
+	color: #999999;
+	background-color: #000000;
+}
