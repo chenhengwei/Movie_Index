@@ -1,0 +1,1047 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<!-- Mirrored from home.ezding.com.tw/web/home.php by HTTrack Website Copier/3.x [XR&CO'2014], Sun, 16 Aug 2015 13:07:52 GMT -->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>ez訂 全台最大電影訂票平台</title>
+<link href="http://travel.ezding.com.tw/favicon.ico" rel="shortcut icon">
+<link href="../css/jquery-ui-1.11.2.min.css" rel="stylesheet" type="text/css">
+<link href="css/reset.css" rel="stylesheet" type="text/css">
+<link href="css/header_141226.css" rel="stylesheet" type="text/css">
+<link href="css/footer_141226.css" rel="stylesheet" type="text/css">
+<link href="css/main_141226.css" rel="stylesheet" type="text/css">
+<link href="css/search_141226.css" rel="stylesheet" type="text/css">
+<link href="css/font-awesome.css" rel="stylesheet" type="text/css">
+<link href="css/lightbox.css" rel="stylesheet" type="text/css">
+<script type="text/javascript" src="../js/jquery-1.11.2.min.js"></script>
+<script type="text/javascript" src="../js/jquery-ui-1.11.2.min.js"></script>
+<script type="text/javascript">
+// common
+function date_addDay(dateString, val) {
+	var tDate = new Date(dateString);
+	tDate.setDate(tDate.getDate() + val);
+
+	return date_getString(tDate);
+}
+function date_getString(date, delimiter) {
+	var t = '-';
+	if (delimiter) t = delimiter;
+
+	var y = date.getFullYear();
+	var m = date.getMonth() + 1;
+	var d = date.getDate();
+
+	return y + t + padLeft(m, 2) + t + padLeft(d, 2);
+}
+function date_today() {
+	return date_getString(new Date());
+}
+function select_setOptions(objId, optionItems, defVal, firstVal, firstText) {
+	var obj = $('#' + objId);
+	obj.find('option').remove().end();
+	if (firstText) obj.append('<option value="' + firstVal + '">' + firstText + '</option>');
+	$.each(optionItems, function(idx, item) {obj.append('<option value="' + item.key + '">' + item.value + '</option>');});
+	if (defVal) obj.val(defVal);
+}
+function padLeft(str, len) {
+	str = '' + str;
+    return str.length >= len ? str : padLeft('0' + str, len);
+}
+function padRight(str, len) {
+	str = '' + str;
+	return str.length >= len ? str : padRight(str + '0', len);
+}
+function printMsg(msg) {
+	if ($('#sys_debugMsg').length) {
+	}
+	else {
+		$(document.body).prepend('<div id="sys_debugMsg"></div>');
+	}
+
+	$('#sys_debugMsg').text($('#sys_debugMsg').text() + msg);
+}
+
+
+
+// 電影
+function findMovieGroupsByLocation() {
+	$.getJSON('http://home.ezding.com.tw/func/ajax_mymovie.php',
+			{'func':'findMovieGroupByLocation', 'data':{'locationCode':$('#location').val()}},
+			function(data){if(data.errorCode && data.errorCode == '0000') select_setOptions('mgId', data.msg, '', '', '選擇電影');}
+	);
+}
+function findSessionDatesByMovieGroupAndLocation(mgId, item1) {
+	if ($('#location').val() == '') {
+		alert('請先選擇地區');
+		return;
+	}
+
+	$.getJSON('http://home.ezding.com.tw/func/ajax_mymovie.php',
+			{'func':'findSessionDatesByMovieGroupAndLocation', 'data':{'mgId':$('#mgId').val(), 'locationCode':$('#location').val()}},
+			function(data) {
+				if (data.errorCode && data.errorCode == '0000') {
+					var dateAry = [];
+					$.each(data.msg, function(idx, item){
+						if (item.key < date_today()) {
+						}
+						else if (item.key == date_today()) {
+							dateAry.push({'key':item.key, 'value':'今天'});
+						}
+						else {
+							dateAry.push({'key':item.key, 'value':item.value});
+						}
+					});
+					select_setOptions('sessionDate', dateAry, '', '', '選擇日期');
+				}
+			}
+	);
+}
+function changeStartTime(selectedDate){
+	var d = new Date();
+	var nowHour = d.getHours();
+	var nowMin  = d.getMinutes();
+	var begin;
+
+	//場次日選今天,將搜尋時間(小時)設定為現在以後
+	if(selectedDate == date_today()){
+		if(nowHour < 7)nowHour = 7;
+		begin = nowHour;
+	}/* end if 場次日期為今天 */
+	else{
+		begin = 7;
+	}
+
+	var sessionTimeStart = $('#sessionTimeStart');
+	$('option', sessionTimeStart).remove();
+	$(sessionTimeStart).append('<option value="">時段(起)</optioin>');
+	for(var i=begin; i<=30; i++){
+		var show;
+		var show2;
+		if(i < 10){
+			show  = "0" + i + ":00";
+			show2 = "0" + i + ":30";
+		}
+		else if(i >= 24){
+			show  = "0" + (i - 24) + ":00";
+			show2 = "0" + (i - 24) + ":30";
+		}
+		else{
+			show  = i + ":00";
+			show2 = i + ":30";
+		}
+
+		if(i == nowHour && nowMin > 30){
+			$(sessionTimeStart).append('<option value="' + show2 + '">' + show2 + '</option>');
+		}
+		else if(i == 30){
+			$(sessionTimeStart).append('<option value="' + show + '">' + show + '</option>');
+		}
+		else{
+			$(sessionTimeStart).append('<option value="' + show + '">' + show + '</option>');
+			$(sessionTimeStart).append('<option value="' + show2 + '">' + show2 + '</option>');
+		}
+	}/* end for */
+}/* end function changeStartTime */
+var minArray = [":00", ":30"];
+function changeEndTime(selectedStartTime){
+	var selectedHour = parseInt(selectedStartTime.substr(0,2), 10);
+	var selectedMin  = selectedStartTime.substr(3,4);
+
+	if(selectedMin == '30') selectedHour += 1;
+	if(selectedHour < 7) selectedHour += 24;
+
+	var sessionTimeEnd = $('#sessionTimeEnd');
+	$('option', sessionTimeEnd).remove();
+	$(sessionTimeEnd).append('<option value="">時段(迄)</optioin>');
+	for(var i = selectedHour; i <= 30; i++) {
+		var show;
+		var show2;
+
+		if(selectedHour < 7) selectedHour += 24;
+		if(i >= 24) selectedHour -= 24;
+
+		show  = padLeft(selectedHour,2) + minArray[0];
+		show2 = padLeft(selectedHour,2) + minArray[1];
+
+		$(sessionTimeEnd).append('<option value="' + show + '">' + show + '</option>');
+		$(sessionTimeEnd).append('<option value="' + show2 + '">' + show2 + '</option>');
+		selectedHour++;
+	}
+	if(selectedMin == '00') $("#sessionTimeEnd option[value='" + selectedStartTime + "']").remove();
+}
+function searchMovieByLocation() {
+	if($('#location').val() == ''){
+		alert('請選擇地區');
+		return;
+	}
+	if($('#mgId').val() == ''){
+		alert('請選擇電影');
+		return;
+	}
+	if($('#sessionDate').val() == ''){
+		alert('請選擇日期');
+		return;
+	}
+	if($('#ticketQuantity').val() == ''){
+		alert('請選擇人數');
+		return;
+	}
+	if($('#sessionTimeStart').val() == ''){
+		alert('請選擇時間');
+		return;
+	}
+
+	var url = "http://www.ezding.com.tw/wfs.do?action=find.seats.by.location.moviegroup.sessionTime";
+	url += "&location=" + $('#location').val();
+	url += "&mgId=" + $('#mgId').val();
+	url += "&sessionDate=" + $('#sessionDate').val();
+	url += "&sessionTimeStart=" + $('#sessionTimeStart').val();
+	url += "&sessionTimeEnd=" + $('#sessionTimeEnd').val();
+	url += "&ticketQuantity=" + $('#ticketQuantity').val();
+
+	location.href = url;
+}
+
+
+function findShowingMoviesByCinemaId() {
+	$.getJSON('http://home.ezding.com.tw/func/ajax_mymovie.php',
+			{'func':'findShowingMoviesByCinemaId', 'data':{'cinemaId':$('#cinemaId').val()}},
+			function(data){if(data.errorCode && data.errorCode == '0000') select_setOptions('movieId', data.msg, '', '', '影片');}
+	);
+}
+function findShowingShowdatesByCinemaIdAndMovieId() {
+	$.getJSON('http://home.ezding.com.tw/func/ajax_mymovie.php',
+			{'func':'findShowingShowdatesByCinemaIdAndMovieId', 'data':{'cinemaId':$('#cinemaId').val(), 'movieId':$('#movieId').val()}},
+			function(data){if(data.errorCode && data.errorCode == '0000') select_setOptions('showDate', data.msg, '', '', '日期');}
+	);
+}
+function findShowingSessionsByCinemaIdAndMovieIdAndShowDate() {
+	$.getJSON('http://home.ezding.com.tw/func/ajax_mymovie.php',
+			{'func':'findShowingSessionsByCinemaIdAndMovieIdAndShowDate', 'data':{'cinemaId':$('#cinemaId').val(), 'movieId':$('#movieId').val(), 'showDate':$('#showDate').val()}},
+			function(data){if(data.errorCode && data.errorCode == '0000') select_setOptions('sessionId', data.msg, '', '', '場次');}
+	);
+}
+function searchMovieByCinema() {
+	if ($('#cinemaId').val() == ""){
+		$('#cinemaId').focus();
+		alert("請選擇戲院");
+		return;
+	}
+	if ($('#movieId').val() == ""){
+		$('#movieId').focus();
+		alert("請選擇影片");
+		return;
+	}
+	if ($('#showDate').val() == ""){
+		$('#showDate').focus();
+		alert("請選擇日期");
+		return;
+	}
+	if ($('#sessionId').val() == ""){
+		$('#sessionId').focus();
+		alert("請選擇場次");
+		return;
+	}
+	if ($('#booking_ticketQuantity').val() == ""){
+		$('#booking_ticketQuantity').focus();
+		alert("請選擇數量");
+		return;
+	}
+
+	var url = "http://www.ezding.com.tw/mb.do?action=auto.reserved.seats";
+	url += "&cinemaId=" + $('#cinemaId').val();
+	url += "&movieId=" + $('#movieId').val();
+	url += "&showDate=" + $('#showDate').val();
+	url += "&sessionId=" + $('#sessionId').val();
+	url += "&ticketQuantity=" + $('#booking_ticketQuantity').val();
+
+	location.href = url;
+}
+
+
+
+// 旅宿
+function dateCompare(date1, date2, act) {
+	var d1 = $('#' + date1);
+	var d2 = $('#' + date2);
+
+	if ('入住日期' == d1.val() || '退房日期' ==  d2.val()) {
+		if ('入住日期' == d1.val()) d1.val(date_addDay(d2.val(), -1));
+		else if ('退房日期' == d2.val()) d2.val(date_addDay(d1.val(), 1));
+	}
+
+	if ('1' ==  checkDate(d1, d2)) {
+		alert("入住日期不能小於今日!!");
+		d1.val(date_today());
+	}
+
+	if (d1.val() >= d2.val()) {
+		if ('1' == act) d2.val(date_addDay(d1.val(), 1));
+		else if ('2' == act) d1.val(date_addDay(d2.val(), -1));
+	}
+
+	if ('2' ==  checkDate(d1, d2)) {
+		alert("入住日期和退房日期不能超過10天!!");
+		if ('1' == act) d2.val(date_addDay(d1.val(), 9));
+		else if ('2' == act) d1.val(date_addDay(d2.val(), -9));
+	}
+}
+function checkDate(d1, d2) {
+	if (d1.val() < date_today()) return '1';
+
+	// amy於2014-01-16要求將日期區間改為 10天
+	var td1 = Date.parse(d1.val());
+	var td2 = Date.parse(d2.val());
+	if (((td2 - td1) / (60 * 60 * 24 * 1000)) >= 10) return '2';
+
+	return '0';
+}
+function searchHomeStay(param) {
+	if (param == 1 && $('#areaId').val() == '0') {
+		alert("請選擇地區!!");
+		return;
+	}
+	if ($('#beginDate').val() == '入住日期') {
+		$('#beginDate').val(date_addDay(date_today(),1));
+		/*alert("請輸入入住日期!!");
+		return;*/
+	}
+	if ($('#endDate').val() == '退房日期') {
+		$('#endDate').val(date_addDay(date_today(),2));
+		/*alert("請輸入退房日期!!");
+		return;*/
+	}
+
+	var rtn = checkDate($('#beginDate'), $('#endDate'));
+	if ('1' ==  rtn) {
+		alert("入住日期不能小於今日!!");
+		return;
+	}
+	else if ('2' ==  rtn) {
+		alert("入住日期和退房日期不能超過10天!!");
+		return;
+	}
+	var nextUrl = 'http://travel.ezding.com.tw/pages/search/home_stay_search.php';
+	nextUrl += '?areaId=' + $('#areaId').val();
+	nextUrl += '&beginDate=' + $('#beginDate').val();
+	nextUrl += '&endDate=' + $('#endDate').val();
+	window.location = nextUrl;
+}
+
+
+
+// 溫泉
+function searchHotSpring(param){
+	if (param == 1 && $('#index_select_where').val() == '0') {
+		alert("請選擇地區!!");
+		return;
+	}
+	if ($('#index_text_when').val() == '日期' || $('#index_text_when').val() == '') $('#index_text_when').val(date_today());
+
+	var url = 'http://hotspring.ezding.com.tw/web/pages/search/search_list.php';
+	url += '?smallAreaId=' + $('#index_select_where').val();
+	url += '&bookedDate=' + $('#index_text_when').val();
+	url += '&supplyCategory=' + $('#index_select_how').val();
+	window.location = url;
+}
+
+
+
+// 輪播
+var timer;
+var n = 0;
+var fadeSpeed = 1000;
+var timerSpeed = 5000;
+var fadeStatus = 'showImg';
+var images = [{
+             "url" :"images\/index_banner_big2.jpg",
+             "link":"http:\/\/travel.ezding.com.tw\/pages\/home.php?utm_source=EZDing_Web&utm_medium=H_Leaderboard02&utm_campaign=SummerSP201506"
+             },{
+             "url" :"images\/index_banner_big.jpg",
+             "link":"http:\/\/travel.ezding.com.tw\/event\/summervaction2015\/freetickets.php?utm_source=Travel_Web&utm_medium=H_Tbar_L&utm_content=%E6%9A%91%E5%81%87%E8%A8%82%E6%88%BF%E9%80%81%E9%9B%BB%E5%BD%B1%E7%A5%A8&utm_campaign=EZ%E8%A8%82%E6%9A%91%E6%9C%9F%E8%A8%82%E6%88%BF%E9%80%81%E9%9B%BB%E5%BD%B1%E7%A5%A8_201506_01"
+             }];
+var imageCount = 2;
+function imgFadeOut() {
+	// 只有一個banner 時，不輸播
+	if (images.length == 1) return;
+
+	fadeStatus = 'fadeOut';
+	$('#bigBanner').fadeOut(fadeSpeed, function(){
+		fadeStatus = 'fadeIn';
+		imgFadeIn();
+		timer = setTimeout(imgFadeOut, timerSpeed);
+	});}
+function imgFadeIn() {
+	showBigBannerImg(1);
+	$('#bigBanner').fadeIn(fadeSpeed, function(){
+		fadeStatus = 'showImg';
+	});
+}
+function stopAutoPlay() {
+	if('fadeOut' == fadeStatus){
+		$("#bigBanner").stop(true, true).stop(true, true);
+		showBigBannerImg(-1);
+	}
+	else if('fadeIn' == fadeStatus){
+		$('#bigBanner').stop(true, true);
+	}
+
+	clearTimeout(timer);
+}
+function startAutoPlay() {
+	timer = setTimeout(imgFadeOut, timerSpeed);
+}
+function showBigBannerImg(val) {
+	n = n + val;
+	if (n >= imageCount) n = 0;
+	if (n < 0) n = (imageCount - 1);
+	$('#bigBanner').css('background-image', 'url(' + images[n].url + ')');
+	if (images[n].link.length) {
+// 		printMsg(images[n].link + ',');
+		$('#bigBanner').prop({'href':images[n].link, 'target':'_blank'});
+	}
+}
+
+
+
+// event one dollar
+function toEventOneDollar() {
+	var url = 'http://hotspring.ezding.com.tw/event/2015_one_dollar/web.php';
+	url += '?utm_source=ezding&utm_medium=ezdinglightbox&utm_campaign=1dollar';
+	window.open(url);
+	$('#event_popup_banner').hide();
+}
+function toEventHomeStay() {
+	var url = 'http://goo.gl/0Eiwge';
+	//url += '?utm_source=BigBanner0329&utm_medium=BigBanner0329&utm_campaign=BigBanner0329';
+	window.open(url);
+	$('#event_popup_banner').hide();
+}
+
+function hideEvent(){
+	$('#event_popup_banner').hide();
+}
+
+
+var load_hs = 0;
+var load_bb = 0;
+var load_mov_cinema = 0;
+var datepickerSetting = {"changeMonth":true,"changeYear":true,"dateFormat":"yy-mm-dd","firstDay":1,"showMonthAfterYear":true,"showAnim":"slideDown","dayNames":["\u661f\u671f\u65e5","\u661f\u671f\u4e00","\u661f\u671f\u4e8c","\u661f\u671f\u4e09","\u661f\u671f\u56db","\u661f\u671f\u4e94","\u661f\u671f\u516d"],"dayNamesMin":["\u65e5","\u4e00","\u4e8c","\u4e09","\u56db","\u4e94","\u516d"],"monthNames":["\u4e00\u6708","\u4e8c\u6708","\u4e09\u6708","\u56db\u6708","\u4e94\u6708","\u516d\u6708","\u4e03\u6708","\u516b\u6708","\u4e5d\u6708","\u5341\u6708","\u5341\u4e00\u6708","\u5341\u4e8c\u6708"],"monthNamesShort":["\u4e00\u6708","\u4e8c\u6708","\u4e09\u6708","\u56db\u6708","\u4e94\u6708","\u516d\u6708","\u4e03\u6708","\u516b\u6708","\u4e5d\u6708","\u5341\u6708","\u5341\u4e00\u6708","\u5341\u4e8c\u6708"],"currentText":"\u4eca\u5929","closeText":"\u95dc\u9589"};
+function loadHotSpring() {
+	if (load_hs == 0) {
+		load_hs = 1;
+
+		$.post('http://home.ezding.com.tw/func/ajax_travel.php', {'func':'findValidHotSpringAreas'},
+				function(data){
+					if(data.errorCode && data.errorCode == '0000'){ select_setOptions('index_select_where', data.msg, null, 0, '地區'); }
+				}, 'json');
+		$.post('http://home.ezding.com.tw/func/ajax_travel.php', {'func':'findValidHotSpringSearchSupplyContents'},
+				function(data){
+					if(data.errorCode && data.errorCode == '0000'){ select_setOptions('index_select_how', data.msg, null, 0, '類別'); }
+				}, 'json');
+
+		$("#index_text_when").datepicker(datepickerSetting);
+		$('#index_text_when').datepicker('option', 'minDate', '+0d');
+	    $('#index_text_when').datepicker('option', 'maxDate', '+34d');
+		$('#index_text_when').datepicker('option', 'showButtonPanel', true);
+		$('#index_text_when').focus(function(){if(this.value=='日期'){this.value='';}});
+		$('#index_text_when').blur(function(){if(this.value==''){this.value='日期';}});
+		$('#index_text_when').blur();
+	}
+}
+function loadHomeStay() {
+	if (load_bb == 0) {
+		load_bb = 1;
+
+		$.post('http://home.ezding.com.tw/func/ajax_travel.php', {'func':'findValidHomeStayAreas'},
+				function(data){
+					if(data.errorCode && data.errorCode == '0000'){ select_setOptions('areaId', data.msg, null, 0, '選擇地區'); }
+				}, 'json');
+
+		$('#beginDate').change(function(){dateCompare('beginDate','endDate', 1);});
+		$('#endDate').change(function(){dateCompare('beginDate','endDate', 2);});
+
+		$("#beginDate").datepicker(datepickerSetting);
+		$('#beginDate').datepicker('option', 'minDate', '+0d');
+	    $('#beginDate').datepicker('option', 'maxDate', '+178d');
+	    $('#beginDate').datepicker('option', 'numberOfMonths', 3);
+		$('#beginDate').datepicker('option', 'showButtonPanel', true);
+		$('#beginDate').focus(function(){if(this.value=='入住日期'){this.value='';}});
+		$('#beginDate').blur(function(){if(this.value==''){this.value='入住日期';}});
+		$('#beginDate').blur();
+
+		$("#endDate").datepicker(datepickerSetting);
+		$('#endDate').datepicker('option', 'minDate', '+1d');
+	    $('#endDate').datepicker('option', 'maxDate', '+179d');
+	    $('#endDate').datepicker('option', 'numberOfMonths', 3);
+		$('#endDate').datepicker('option', 'showButtonPanel', true);
+		$('#endDate').focus(function(){if(this.value=='退房日期'){this.value='';}});
+		$('#endDate').blur(function(){if(this.value==''){this.value='退房日期';}});
+		$('#endDate').blur();
+	}
+}
+function loadMovieCinema() {
+	if (load_mov_cinema == 0) {
+		load_mov_cinema = 1;
+
+		$.getJSON('http://home.ezding.com.tw/func/ajax_mymovie.php',
+				{'func':'findValidCinemas', 'data':{}},
+				function(data){if(data.errorCode && data.errorCode == '0000') select_setOptions('cinemaId', data.msg, '', '', '戲院');}
+		);
+
+		$('#cinemaId').change(function(){findShowingMoviesByCinemaId();});
+		$('#movieId').change(function(){findShowingShowdatesByCinemaIdAndMovieId();});
+		$('#showDate').change(function(){findShowingSessionsByCinemaIdAndMovieIdAndShowDate();});
+	}
+}
+
+var isShowEvent = 1;
+$(function(){
+	$('#tab_mov').click(function(){
+		$('#ul_tab').prop('class', 'mov');
+		$('#tab_mov').addClass('active');
+		$('#tab_bb').removeClass('active');
+		$('#tab_hs').removeClass('active');
+
+		$('#search_mov').show();
+		$('#search_bb').hide();
+		$('#search_hs').hide();
+	});
+	$('#tab_bb').click(function(){
+		$('#ul_tab').prop('class', 'bb');
+		$('#tab_mov').removeClass('active');
+		$('#tab_bb').addClass('active');
+		$('#tab_hs').removeClass('active');
+
+		$('#search_mov').hide();
+		$('#search_bb').show();
+		$('#search_hs').hide();
+
+		loadHomeStay();
+	});
+	$('#tab_hs').click(function(){
+		$('#ul_tab').prop('class', 'hs');
+		$('#tab_mov').removeClass('active');
+		$('#tab_bb').removeClass('active');
+		$('#tab_hs').addClass('active');
+
+		$('#search_mov').hide();
+		$('#search_bb').hide();
+		$('#search_hs').show();
+
+		loadHotSpring();
+	});
+
+	$('#tab_mov_location').click(function(){
+		$('#tab_mov_location').addClass('active');
+		$('#tab_mov_cinema').removeClass('active');
+
+		$('#search_mov_location').show();
+		$('#search_mov_cinema').hide();
+	});
+	$('#tab_mov_cinema').click(function(){
+		$('#tab_mov_location').removeClass('active');
+		$('#tab_mov_cinema').addClass('active');
+
+		$('#search_mov_location').hide();
+		$('#search_mov_cinema').show();
+
+		loadMovieCinema();
+	});
+       
+	// movie location
+	$('#location').change(function(){findMovieGroupsByLocation();});
+	$('#mgId').change(function(){findSessionDatesByMovieGroupAndLocation();});
+	$('#sessionDate').change(function(){changeStartTime(this.value);});
+	$('#sessionTimeStart').change(function(){changeEndTime(this.value);});
+
+// 	loadHotSpring();
+
+
+	// bigBanner 輪播
+	$('#bigBannerDiv').hover(
+
+		// 當滑鼠滑入區塊停止自動播放
+		function(){stopAutoPlay();},
+
+		// 當滑鼠移出區塊開始自動播放
+		function(){startAutoPlay();}
+	);
+	showBigBannerImg(0);
+	timer = setTimeout(imgFadeOut, timerSpeed);
+
+
+	// event popup banner
+	//if (1 == isShowEvent) $('#event_popup_banner').show();
+
+	});
+</script>
+</head>
+
+<body>
+<div id="fadeMsg"></div>
+<!--Header-->
+<div class="Header">
+<div class="header-width">
+<a href="http://home.ezding.com.tw/" class="header-logo-New">EZ訂 logo</a>
+<div class="menu">
+<span class="menu-title">EZDING.COM</span>
+  <ul>
+    <li><a href="http://www.ezding.com.tw/welcome.do">電影</a></li>
+    <li><a href="http://travel.ezding.com.tw/">旅宿</a></li>
+    <li><a href="http://hotspring.ezding.com.tw/">溫泉</a></li>
+<!--
+    <li class="end"><a href="#">租車</a></li>
+-->
+  </ul>
+</div>
+<div class="member">
+<span class="name">
+<a href="https://www.ezding.com.tw/enduser.do?ezfrom=homestay">登入</a>&nbsp;&nbsp;
+</span>
+<a href="#" class="member-menu"><i class="fa fa-bars"></i></a>
+
+<a href="#" class="language">
+<i class="fa fa-chevron-right"></i><span class="language-cht"></span>
+</a>
+<a href="#" class="currency">
+<i class="fa fa-chevron-right"></i>TWD
+</a>
+
+<div class="submenu-box submenu-member" style="display:none">
+  <ul>
+<!--
+    <li><a href="#">評價評論</a></li>
+    <li><a href="#">我的收藏</a></li>
+-->
+    <li><a href="http://www.ezding.com.tw/mbqa.do?action=help.booking">我的優惠</a></li>
+    <li><a href="http://www.ezding.com.tw/enduser.do">個人資料</a></li>
+  </ul>
+</div>
+</div>
+<div class="submenu">
+<a href="http://www.ezding.com.tw/cc.do?action=online&amp;ezfrom=homestay" class="service">客服中心</a>
+<a href="http://www.ezding.com.tw/mbr.do?ezfrom=homestay" class="order-history">訂購記錄</a>
+</div>
+</div>
+</div>
+<!--end Header-->
+
+
+<div class="Banner" id="bigBannerDiv">
+<a href="#" class="Banner-pic" id="bigBanner"></a>
+<a href="#" class="Banner-btn-left" onclick="showBigBannerImg(-1)"><i class="fa fa-angle-left"></i></a>
+<a href="#" class="Banner-btn-right" onclick="showBigBannerImg(1)"><i class="fa fa-angle-right"></i></a>
+<div class="search-width">
+<div class="search">
+<div class="search-menu">
+  <ul class="mov" id="ul_tab">
+    <li><a href="#" class="mov active" id="tab_mov">電影</a></li>
+    <li><a href="#" class="bb" id="tab_bb">旅宿</a></li>
+    <li><a href="#" class="hs" id="tab_hs">溫泉</a></li>
+  </ul>
+  </div>
+
+<!--電影search-->
+  <div class="search-select" style="display:block" id="search_mov">
+    <div class="search-title">
+    <h3 style="margin-bottom:9px;">線上選位，取票才扣款</h3>
+</div>
+    <ul class="mov-tag">
+        
+      <li><a href="#" class="active" id="tab_mov_location">哪裡有空位</a></li>
+      <li><a href="#" id="tab_mov_cinema">影城訂票</a></li>
+    </ul>
+
+    <!--電影:哪裡有空位-->
+    <div class="mov-select" style="display:block" id="search_mov_location">
+    <select name="location" id="location" class="search-s1 icon-mov">
+		<option value="">地區</option>
+		<option value="1">台北</option>
+		<option value="2">桃園</option>
+		<option value="3">新竹</option>
+		<option value="4">台中</option>
+		<option value="5">台南</option>
+		<option value="6">高雄</option>
+		<option value="7">屏東</option>
+		<option value="8">宜蘭</option>
+                <option value="9">苗栗</option>
+    </select>
+    <select name="mgId" id="mgId" class="search-s1 icon-mov">
+      <option>選擇電影</option>
+    </select>
+    <select name="ticketQuantity" id="ticketQuantity" class="search-s2 icon-mov">
+      <option value="">幾人</option>
+	  <option value="1">1</option>
+	  <option value="2">2</option>
+	  <option value="3">3</option>
+	  <option value="4">4</option>
+	  <option value="5">5</option>
+	  <option value="6">6</option>
+    </select>
+        <select name="sessionDate" id="sessionDate" class="search-s2 icon-mov">
+      <option value="">今天</option>
+    </select>
+    <select name="sessionTimeStart" id="sessionTimeStart" class="search-s2 icon-mov">
+        
+		<option value="">時段(起)</option>
+		<option value="07:00">07:00</option>
+		<option value="07:30">07:30</option>
+		<option value="08:00">08:00</option>
+		<option value="08:30">08:30</option>
+		<option value="09:00">09:00</option>
+		<option value="09:30">09:30</option>
+		<option value="10:00">10:00</option>
+		<option value="10:30">10:30</option>
+		<option value="11:00">11:00</option>
+		<option value="11:30">11:30</option>
+		<option value="12:00">12:00</option>
+		<option value="12:30">12:30</option>
+		<option value="13:00">13:00</option>
+		<option value="13:30">13:30</option>
+		<option value="14:00">14:00</option>
+		<option value="14:30">14:30</option>
+		<option value="15:00">15:00</option>
+		<option value="15:30">15:30</option>
+		<option value="16:00">16:00</option>
+		<option value="16:30">16:30</option>
+		<option value="17:00">17:00</option>
+		<option value="17:30">17:30</option>
+		<option value="18:00">18:00</option>
+		<option value="18:30">18:30</option>
+		<option value="19:00">19:00</option>
+		<option value="19:30">19:30</option>
+		<option value="20:00">20:00</option>
+		<option value="20:30">20:30</option>
+		<option value="21:00">21:00</option>
+		<option value="21:30">21:30</option>
+		<option value="22:00">22:00</option>
+		<option value="22:30">22:30</option>
+		<option value="23:00">23:00</option>
+		<option value="23:30">23:30</option>
+		<option value="00:00">00:00</option>
+		<option value="00:30">00:30</option>
+		<option value="01:00">01:00</option>
+		<option value="01:30">01:30</option>
+		<option value="02:00">02:00</option>
+		<option value="02:30">02:30</option>
+		<option value="03:00">03:00</option>
+		<option value="03:30">03:30</option>
+		<option value="04:00">04:00</option>
+		<option value="04:30">04:30</option>
+		<option value="05:00">05:00</option>
+		<option value="05:30">05:30</option>
+		<option value="06:00">06:00</option>
+		<option value="06:30">06:30</option>
+    </select>
+    <select name="sessionTimeEnd" id="sessionTimeEnd" class="search-s2 icon-mov">
+		<option value="">時段(迄)</option>
+		<option value="07:00">07:00</option>
+		<option value="07:30">07:30</option>
+		<option value="08:00">08:00</option>
+		<option value="08:30">08:30</option>
+		<option value="09:00">09:00</option>
+		<option value="09:30">09:30</option>
+		<option value="10:00">10:00</option>
+		<option value="10:30">10:30</option>
+		<option value="11:00">11:00</option>
+		<option value="11:30">11:30</option>
+		<option value="12:00">12:00</option>
+		<option value="12:30">12:30</option>
+		<option value="13:00">13:00</option>
+		<option value="13:30">13:30</option>
+		<option value="14:00">14:00</option>
+		<option value="14:30">14:30</option>
+		<option value="15:00">15:00</option>
+		<option value="15:30">15:30</option>
+		<option value="16:00">16:00</option>
+		<option value="16:30">16:30</option>
+		<option value="17:00">17:00</option>
+		<option value="17:30">17:30</option>
+		<option value="18:00">18:00</option>
+		<option value="18:30">18:30</option>
+		<option value="19:00">19:00</option>
+		<option value="19:30">19:30</option>
+		<option value="20:00">20:00</option>
+		<option value="20:30">20:30</option>
+		<option value="21:00">21:00</option>
+		<option value="21:30">21:30</option>
+		<option value="22:00">22:00</option>
+		<option value="22:30">22:30</option>
+		<option value="23:00">23:00</option>
+		<option value="23:30">23:30</option>
+		<option value="00:00">00:00</option>
+		<option value="00:30">00:30</option>
+		<option value="01:00">01:00</option>
+		<option value="01:30">01:30</option>
+		<option value="02:00">02:00</option>
+		<option value="02:30">02:30</option>
+		<option value="03:00">03:00</option>
+		<option value="03:30">03:30</option>
+		<option value="04:00">04:00</option>
+		<option value="04:30">04:30</option>
+		<option value="05:00">05:00</option>
+		<option value="05:30">05:30</option>
+		<option value="06:00">06:00</option>
+		<option value="06:30">06:30</option>
+    </select>
+      <div class="btm-w">
+      <a href="javascript:searchMovieByLocation()" class="search-btm color-mov">送出</a>
+      </div>
+      </div>
+
+    <!--電影：影城訂票-->
+    <div class="mov-select" style="display:none" id="search_mov_cinema">
+    <select name="cinemaId" id="cinemaId" class="search-s1 icon-mov">
+      <option>戲院</option>
+    </select>
+        <select name="movieId" id="movieId" class="search-s1 icon-mov">
+      <option>影片</option>
+    </select>
+        <select name="showDate" id="showDate" class="search-s1 icon-mov">
+      <option>日期</option>
+    </select>
+        <select name="sessionId" id="sessionId" class="search-s2 icon-mov">
+      <option>場次</option>
+    </select>
+        <select name="booking_ticketQuantity" id="booking_ticketQuantity" class="search-s2 icon-mov">
+      <option value="">數量</option>
+	  <option value="1">1</option>
+	  <option value="2">2</option>
+	  <option value="3">3</option>
+	  <option value="4">4</option>
+	  <option value="5">5</option>
+	  <option value="6">6</option>
+    </select>
+      <div class="btm-w">
+      <a href="javascript:searchMovieByCinema()" class="search-btm color-mov">送出</a>
+      </div>
+      </div>
+
+      </div>
+
+<!--旅宿search-->
+  <div class="search-select" style="display:none" id="search_bb">
+  <div class="search-title">
+    <h3>嚴選全台特色民宿</h3>
+  <h4 class="mb">免打電話，線上輕鬆訂</h4>
+</div>
+    <div class="search-hot" style="display:block">
+<!--
+  <span class="search-hot-txt">熱門：</span>
+  <ul class="search-hot-list">
+    <li><a href="#">沐舍</a></li>
+    <li><a href="#">泉鄉風華</a></li>
+    <li><a href="#">緹閣</a></li>
+    <li><a href="#">泉鄉風華</a></li>
+    <li><a href="#">亞諾溫泉戀館</a></li>
+    <li><a href="#">沐舍溫泉渡假酒店</a></li>
+  </ul>
+-->
+  </div>
+  <select name="select" id="areaId" class="search-s1 icon-bb">
+      <option value="0">選擇地區</option>
+    </select>
+  <input name="textfield" type="text" id="beginDate" value="入住日期" class="search-t1" readonly="readonly">
+  <input name="textfield" type="text" id="endDate" value="退房日期" class="search-t1" readonly="readonly">
+      <div class="btm-w">
+      <a href="javascript:searchHomeStay(1)" class="search-btm color-bb">送出</a>
+      </div>
+  </div>
+
+<!--溫泉search-->
+  <div class="search-select" style="display:none" id="search_hs">
+<div class="search-title">
+    <h3>泡湯不需先買券</h3>
+  <h4 class="mb">立即訂、立即用、立即享優惠</h4>
+</div>
+  <div class="search-hot" style="display:block">
+<!--
+  <span class="search-hot-txt">熱門：</span>
+  <ul class="search-hot-list">
+    <li><a href="#">沐舍</a></li>
+    <li><a href="#">泉鄉風華</a></li>
+    <li><a href="#">緹閣</a></li>
+    <li><a href="#">泉鄉風華</a></li>
+    <li><a href="#">亞諾溫泉戀館</a></li>
+    <li><a href="#">沐舍溫泉渡假酒店</a></li>
+  </ul>
+-->
+  </div>
+  <select name="select" id="index_select_where" class="search-s1 icon-hs">
+      <option value="0">地區</option>
+    </select>
+  <select name="select" id="index_select_how" class="search-s1 icon-hs">
+      <option value="0">類別</option>
+    </select>
+  <input name="textfield" type="text" id="index_text_when" value="日期" class="search-t1">
+      <div class="btm-w">
+      <a href="javascript:searchHotSpring(1)" class="search-btm color-hs">送出</a>
+      </div>
+  </div>
+
+
+</div>
+</div>
+<div class="app">
+<div class="app-w">
+<span class="join-txt">加入我們</span>
+<a href="https://www.facebook.com/sofunezding" class="join-icon" style="background-image:url(images/join_fb.png)">臉書</a>
+<a href="http://weibo.com/ezding" class="join-icon" style="background-image:url(images/join_wei.png)">微博</a>
+<a href="https://play.google.com/store/apps/details?id=com.ezding.app&amp;hl=zh_TW" class="app-icon" style="background-image: url(images/app_google.png);">play APP</a>
+<a href="https://itunes.apple.com/tw/app/ez-ding-dian-ying-min-su-wen/id960997621?l=zh&amp;mt=8" class="app-icon" style="background-image:url(images/app_ios.png)">iOS APP</a>
+</div>
+</div>
+</div>
+
+
+
+
+
+
+
+
+<!--Footer-->
+<div class="Footer">
+<div class="Footer-sitemap">
+<div class="Unit01 Unit-padd">
+  <span class="Unit-title">旅宿</span>
+  <ul class="row2 row-txt">
+    <li><a href="http://travel.ezding.com.tw/pages/search/relay_media.php?homeStayId=301">媒體嚴選</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/relay_idol.php?homeStayId=551">偶像劇場景</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/relay_sgs.php">放心優質選</a></li>
+    <li><a href="#">部落客推薦</a></li>
+  </ul>
+    <span class="row-title padd-top">&gt;各地區訂房</span>
+    <ul class="row4 row-txt">
+    <li><a href="http://travel.ezding.com.tw/pages/search/home_stay_search.php?areaId=16">台北</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/home_stay_search.php?areaId=15">桃園</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/home_stay_search.php?areaId=18">宜蘭</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/home_stay_search.php?areaId=7">花蓮</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/home_stay_search.php?areaId=19">台東</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/home_stay_search.php?areaId=6">綠島</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/home_stay_search.php?areaId=12">苗栗</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/home_stay_search.php?areaId=11">台中</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/home_stay_search.php?areaId=58">南投</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/home_stay_search.php?areaId=3">彰化</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/home_stay_search.php?areaId=124">新竹</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/home_stay_search.php?areaId=14">雲林</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/home_stay_search.php?areaId=5">嘉義</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/home_stay_search.php?areaId=9">台南</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/home_stay_search.php?areaId=13">高雄</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/home_stay_search.php?areaId=1">墾丁</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/home_stay_search.php?areaId=10">小琉球</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/home_stay_search.php?areaId=4">澎湖</a></li>
+    <li><a href="http://travel.ezding.com.tw/pages/search/home_stay_search.php?areaId=8">金門</a></li>
+  </ul>
+</div>
+
+<div class="Unit01 Unit-padd">
+<span class="Unit-title">電影</span>
+  <ul class="row2 row-txt">
+<li><a href="http://www.ezding.com.tw/welcome.do">最新預告</a></li>
+<li><a href="#">評價評論</a></li>
+<li><a href="http://www.ezding.com.tw/welcome.do">即將上映電影</a></li>
+<li><a href="http://www.ezding.com.tw/welcome.do">訂票Top10</a></li>
+  </ul>
+  <span class="row-title padd-top">&gt;各區影城訂票</span>
+    <ul class="row2 row-txt">
+<li><a href="http://www.ezding.com.tw/mb.do?cinemaId=aa328194963a11e092b89646992d17ea">in89豪華</a></li>
+<li><a href="http://www.ezding.com.tw/mb.do?cinemaId=46efa950eafa11e38b12000bdb90dba4">樂聲</a></li>
+<li><a href="http://www.ezding.com.tw/mb.do?cinemaId=79dd632cce7511e2ad6600215edc3df8">新民生</a></li>
+<li><a href="http://www.ezding.com.tw/mb.do?cinemaId=40288eb0050f542401050f554e7e0674">威秀</a></li>
+<li><a href="http://www.ezding.com.tw/mb.do?cinemaId=40288eb0050f542401050f55676b1bbc">美麗華大直</a></li>
+<li><a href="http://www.ezding.com.tw/mb.do?cinemaId=40288eb0050f542401050f5566201ba4">華威</a></li>
+<li><a href="http://www.ezding.com.tw/mb.do?cinemaId=2c28121ae2c711e292f7000bdb90dba4">屏東中影</a></li>
+  </ul>
+</div>
+
+<div class="Unit01 Unit-padd">
+<span class="Unit-title">溫泉</span>
+  <ul class="row2 row-txt">
+<li><a href="#">湯屋預訂</a></li>
+<li><a href="#">大眾湯預訂</a></li>
+<li><a href="#">溫泉住宿訂房</a></li>
+  </ul>
+  <span class="row-title padd-top">&gt;各區溫泉</span>
+    <ul class="row2 row-txt">
+<li><a href="http://hotspring.ezding.com.tw/web/pages/search/search_list.php?smallAreaId=218">烏來</a></li>
+<li><a href="http://hotspring.ezding.com.tw/web/pages/search/search_list.php?smallAreaId=221">金山</a></li>
+<li><a href="#">北投</a></li>
+<li><a href="http://hotspring.ezding.com.tw/web/pages/search/search_list.php?smallAreaId=220">礁溪</a></li>
+<li><a href="http://hotspring.ezding.com.tw/web/pages/search/search_list.php?smallAreaId=222">泰安</a></li>
+<li><a href="#">谷關</a></li>
+<li><a href="#">知本</a></li>
+<li><a href="#">關仔嶺</a></li>
+<li><a href="#">四重溪</a></li>
+  </ul>
+</div>
+
+<div class="Unit01">
+<span class="Unit-title">交通資訊</span>
+<span class="row-title">&gt;陸上交通查詢/訂票： </span>
+  <ul class="row1 row-txt">
+<li><a href="http://twtraffic.tra.gov.tw/twrail/">鐵路</a></li>
+<li><a href="http://www.thsrc.com.tw/index.html">高鐵</a></li>
+<li><a href="http://www.taiwantrip.com.tw/">台灣好行觀光巴士</a></li>
+  </ul>
+  <span class="row-title padd-top">&gt;國內線航空查詢/訂票： </span>
+    <ul class="row1 row-txt">
+<li><a href="http://www.mandarin-airlines.com/" target="_blank">華信</a></li>
+<li><a href="http://www.tna.com.tw/" target="_blank">復興</a></li>
+<li><a href="https://www.uniair.com.tw/" target="_blank">立榮</a></li>
+  </ul>
+</div>
+</div>
+
+<div class="foot-logo">
+<div class="logo-line"></div>
+<div class="logo-txt">
+<span class="logo-pic"></span>
+<span class="logo-slogan">享樂生活預訂平台</span>
+</div>
+</div>
+
+<div class="foot-menu">
+<ul>
+<li><a href="http://weibo.com/ezding" target="_blank">官方微博</a></li>
+<li><a href="https://www.facebook.com/sofunezding?fref=ts" target="_blank">官方粉絲團</a></li>
+<li><a href="http://travel.ezding.com.tw/blog/" target="_blank">官方部落格</a></li>
+<li><a href="http://www.fullerton.com.tw/" target="_blank">公司簡介</a></li>
+<li><a href="http://travel.ezding.com.tw/pages/qa/cooperation.php">服務合作</a></li>
+<li><a href="http://www.ezding.com.tw/mbqa.do?action=help.booking">優惠查詢</a></li>
+<li><a href="http://www.ezding.com.tw/pages/static/privacy_policy.htm">隱私權條款</a></li>
+<li><a href="http://www.ezding.com.tw/pages/static/member_provision.htm">會員條款</a></li>
+</ul>
+</div>
+<div class="foot-copyright">
+EZ訂 採用與銀行同等級之 SSL 128bit 安全電子交易機制，是全球安全認證的網站<br>
+Copyright Since 2010 富爾特科技股份有限公司 版權所有，轉載必究
+</div>
+</div>
+<!--end Footer-->
+
+
+<!--lightbox-->
+<!-- end lightbox-->
+<!--lightbox-->
+<div id="event_popup_banner" class="lightbox" style="display:none">
+<div class="figure figure-banner">
+<a href="javascript:hideEvent()" class="close-lightbox-banner"><i class="fa fa-times"></i></a><img src="images/banner_900x500.jpg" alt="" width="900" height="500" usemap="#Map" border="0"/>
+<map name="Map">
+  <!-- <area shape="rect" coords="454,5,895,494" href="javascript:toEventOneDollar()"> -->
+  <area shape="rect" coords="5,4,895,493" href="javascript:toEventHomeStay()">
+</map>
+</div>
+</div>
+<!--end lightbox-->
+
+
+
+
+
+</body>
+
+<!-- Mirrored from home.ezding.com.tw/web/home.php by HTTrack Website Copier/3.x [XR&CO'2014], Sun, 16 Aug 2015 13:07:56 GMT -->
+</html>

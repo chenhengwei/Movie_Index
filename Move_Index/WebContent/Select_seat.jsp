@@ -183,7 +183,7 @@
 
                     <p>Movie: <span> <%=new String(request.getParameter("mgId").getBytes( "ISO-8859-1"), "UTF-8")%></span></p>
                     <p>Time: <span><%=request.getParameter("todays_date")%></span></p>
-                    <p>Peopel: <%=request.getParameter("ticketQuantity")%></p>
+                    <p>People: <%=request.getParameter("ticketQuantity")%></p>
                     <p>起: <%=request.getParameter("sessionTimeStart")%> 迄: <%=request.getParameter("sessionTimeEnd")%></p>
                     <p>Seat: </p>
                     <ul id="selected-seats">
@@ -197,8 +197,7 @@
                     <p>Total: <b>$<span id="total">0</span></b></p>
                     <br>
                     <button class="checkout-button">BUY</button>
-					<br>
-					<br>
+
                     <div id="legend" class="seatCharts-legend">
                         <ul class="seatCharts-legendList">
 
